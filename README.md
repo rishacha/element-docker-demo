@@ -9,7 +9,8 @@ featuring:
  * Matrix Authentication Service
  * LiveKit
  * Postgres
- * nginx + letsencrypt / mkcert for TLS.
+
+**This version has been modified to work with external reverse proxy (Nginx Proxy Manager, Traefik, Caddy, etc.) instead of bundled nginx.**
 
 This is **not** intended for serious production usage, but instead as a tool for curious sysadmins to easily experiment
 with Matrix 2.0 in a simple docker compose environment.  As of Nov 2024, it's considered beta.
@@ -23,26 +24,29 @@ In particular, this has:
  * No fancy secret management (stored in plaintext on disk)
  * No UDP traffic or TURN for LiveKit (all traffic is tunnelled over TCP for simplicity)
  * No push server, integration manager, integrations, or identity lookup server
+ * No bundled reverse proxy (you must use your own - Nginx Proxy Manager, Traefik, Caddy, etc.)
 
 For production-grade Matrix from Element, please see https://element.io/server-suite (ESS).
 
+## Prerequisites
+
+ 1. Install [Docker Compose](https://docs.docker.com/compose/install/)
+ 2. Have a reverse proxy ready (Nginx Proxy Manager, Traefik, Caddy, etc.)
+ 3. Configure DNS to point your domain and subdomains to your reverse proxy
+
 ## To run
 
- 1. Install [Docker Compose](https://docs.docker.com/compose/install/).
- 2. If you're running on your local workstation, then [install mkcert](https://github.com/FiloSottile/mkcert#installation) to manage TLS.
-
-Then:
-
-```
+```bash
 ./setup.sh
 
-# Point DNS for *.domain at your docker host,
-# Or if running on localhost with mkcert:
-# source .env; sudo sh -c "echo 127.0.0.1 $DOMAINS >> /etc/hosts"
+# Configure your reverse proxy according to NGINX_PROXY_MANAGER_SETUP.md
+# (or adapt for your reverse proxy of choice)
 
 docker compose up
-# go to https://element on your domain.
+# Access Element Web at https://element.yourdomain.com
 ```
+
+**For Nginx Proxy Manager users:** See [NGINX_PROXY_MANAGER_SETUP.md](NGINX_PROXY_MANAGER_SETUP.md) for detailed configuration instructions.
 
 ![docker demo](https://github.com/user-attachments/assets/c17e42f7-3442-478a-9ae4-ad2709885386)
 
@@ -57,14 +61,31 @@ Watch the full video:
 
 For more info, see https://element.io/blog/experimenting-with-matrix-2-0-using-element-docker-demo/
 
+## Exposed Ports
+
+The following ports are exposed for your reverse proxy to connect to:
+
+| Service | Port | Purpose |
+|---------|------|---------|
+| Synapse | 8008 | Main homeserver API |
+| Synapse Worker | 8081 | Sync endpoints |
+| MAS | 8083 | Authentication service |
+| Element Web | 8080 | Web client |
+| Element Call | 8082 | Video calling |
+| LiveKit | 7880 | Media server HTTP |
+| LiveKit | 7881 | WebRTC transport (TCP) |
+| LiveKit | 8448 | Federation port |
+| LiveKit JWT | 8084 | JWT service |
+| MailHog | 8025 | Email testing UI |
+
 ## To configure
 
 Check the .env file, or customise the templates in `/data-templates` and then `docker compose down && docker compose up -d`.
 
 In particular, you may wish to:
  * Point at your own SMTP server rather than mailhog
- * Use your own reverse proxy rather than the provided nginx
  * Use your own database cluster
+ * Adjust the LIVEKIT_NODE_IP to your public IP
 
 Container data gets stored in `./data`, and secrets in `./secrets`.
 N.B. that config files in `./data` will get overwritten by the templates from `./data-template` every time the cluster
