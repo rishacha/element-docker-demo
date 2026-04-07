@@ -17,7 +17,6 @@ Since nginx and certbot have been removed from the docker-compose setup, you'll 
 Create A records for the following subdomains pointing to your Nginx Proxy Manager IP:
 
 ```
-example.com           -> <NPM_IP>
 matrix.example.com    -> <NPM_IP>
 auth.example.com      -> <NPM_IP>
 element.example.com   -> <NPM_IP>
@@ -27,6 +26,8 @@ livekit-jwt.example.com -> <NPM_IP>
 ```
 
 Replace `example.com` with your actual domain and `<NPM_IP>` with your Nginx Proxy Manager IP address.
+
+**Note:** The base domain (example.com) is not configured - only subdomains are used.
 
 ## Service Ports
 
@@ -46,20 +47,20 @@ The following services are exposed and need to be proxied:
 
 ## Nginx Proxy Manager Configuration
 
-### 1. Base Domain (example.com)
+### 1. Matrix Homeserver (matrix.example.com)
 
 **Proxy Host Settings:**
-- Domain Names: `example.com`
+- Domain Names: `matrix.example.com`
 - Scheme: `http`
 - Forward Hostname/IP: `<docker_host_ip>`
-- Forward Port: `8080` (Element Web)
-- Cache Assets: ✓
+- Forward Port: `8008`
+- Cache Assets: ✗
 - Block Common Exploits: ✓
 - Websockets Support: ✓
 
 **Custom Locations:**
 
-Add location for `.well-known` (for Matrix federation):
+Add `.well-known` endpoints for Matrix federation discovery:
 ```nginx
 location /.well-known/matrix/server {
     return 200 '{"m.server": "matrix.example.com:443"}';
@@ -72,28 +73,7 @@ location /.well-known/matrix/client {
     default_type application/json;
     add_header Access-Control-Allow-Origin *;
 }
-
-location /.well-known/openid-configuration {
-    proxy_pass http://<docker_host_ip>:8083;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-}
 ```
-
-**SSL:** Enable SSL with Let's Encrypt or your preferred certificate
-
-### 2. Matrix Homeserver (matrix.example.com)
-
-**Proxy Host Settings:**
-- Domain Names: `matrix.example.com`
-- Scheme: `http`
-- Forward Hostname/IP: `<docker_host_ip>`
-- Forward Port: `8008`
-- Cache Assets: ✗
-- Block Common Exploits: ✓
-- Websockets Support: ✓
 
 **Custom Nginx Configuration:**
 ```nginx
@@ -145,7 +125,7 @@ location ~ ^/_matrix/client/(api/v1|r0|v3)/rooms/[^/]+/initialSync$ {
 
 **SSL:** Enable SSL with Let's Encrypt
 
-### 3. Federation Port (matrix.example.com:8448)
+### 2. Federation Port (matrix.example.com:8448)
 
 **Stream Configuration (TCP):**
 - Incoming Port: `8448`
@@ -153,7 +133,7 @@ location ~ ^/_matrix/client/(api/v1|r0|v3)/rooms/[^/]+/initialSync$ {
 - Forward Port: `8448`
 - Enable SSL: ✓ (use same certificate as matrix.example.com)
 
-### 4. MAS Authentication (auth.example.com)
+### 3. MAS Authentication (auth.example.com)
 
 **Proxy Host Settings:**
 - Domain Names: `auth.example.com`
@@ -166,7 +146,7 @@ location ~ ^/_matrix/client/(api/v1|r0|v3)/rooms/[^/]+/initialSync$ {
 
 **SSL:** Enable SSL with Let's Encrypt
 
-### 5. Element Web (element.example.com)
+### 4. Element Web (element.example.com)
 
 **Proxy Host Settings:**
 - Domain Names: `element.example.com`
@@ -179,7 +159,7 @@ location ~ ^/_matrix/client/(api/v1|r0|v3)/rooms/[^/]+/initialSync$ {
 
 **SSL:** Enable SSL with Let's Encrypt
 
-### 6. Element Call (call.example.com)
+### 5. Element Call (call.example.com)
 
 **Proxy Host Settings:**
 - Domain Names: `call.example.com`
@@ -192,7 +172,7 @@ location ~ ^/_matrix/client/(api/v1|r0|v3)/rooms/[^/]+/initialSync$ {
 
 **SSL:** Enable SSL with Let's Encrypt
 
-### 7. LiveKit (livekit.example.com)
+### 6. LiveKit (livekit.example.com)
 
 **Proxy Host Settings:**
 - Domain Names: `livekit.example.com`
@@ -213,7 +193,7 @@ proxy_set_header Connection "upgrade";
 
 **SSL:** Enable SSL with Let's Encrypt
 
-### 8. LiveKit JWT (livekit-jwt.example.com)
+### 7. LiveKit JWT (livekit-jwt.example.com)
 
 **Proxy Host Settings:**
 - Domain Names: `livekit-jwt.example.com`
@@ -226,7 +206,7 @@ proxy_set_header Connection "upgrade";
 
 **SSL:** Enable SSL with Let's Encrypt
 
-### 9. MailHog (Optional - mail.example.com)
+### 8. MailHog (Optional - mail.example.com)
 
 **Proxy Host Settings:**
 - Domain Names: `mail.example.com`
