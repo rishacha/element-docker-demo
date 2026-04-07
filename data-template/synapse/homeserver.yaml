@@ -108,6 +108,8 @@ experimental_features:
     client_secret: '${SECRETS_MAS_CLIENT_SECRET}'
     admin_token: '${SECRETS_MAS_MATRIX_SECRET}'
     account_management_url: "https://${MAS_FQDN}/account"
+    # Internal endpoint for Synapse to connect to MAS via Docker network
+    issuer_metadata: http://mas:8080/
 
   # QR login
   msc4108_enabled: true
